@@ -1,96 +1,80 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from "recharts";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
-const trendData = Array.from({ length: 14 }, (_, i) => ({
-  day: `Day ${i + 1}`,
-  risk: Math.floor(30 + Math.random() * 40 + (i > 10 ? 25 : 0)),
-  predicted: i > 10 ? Math.floor(50 + Math.random() * 30) : undefined,
-}));
+interface Target { user_id: string; risk_probability: number; reason: string; estimated_time: string; recommended_action: string; }
+interface ForecastData { at_risk_accounts: Target[]; trend_data: { day: string; risk: number; predicted?: number }[]; }
 
-const targets = [
-  { id: "UPI-8832910455", risk: 91, reason: "Pattern matches known mule behavior", time: "~6 hrs" },
-  { id: "UPI-3345129876", risk: 84, reason: "Sudden velocity increase detected", time: "~12 hrs" },
-  { id: "UPI-7712340987", risk: 76, reason: "Geo-anomaly + device change", time: "~18 hrs" },
-];
+const FuturePrediction = () => {
+  const [data, setData] = useState<ForecastData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const FuturePrediction = () => (
-  <section className="py-24 md:py-32 border-t border-white/[0.04]">
-    <div className="section-container">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="text-center mb-16"
-      >
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Future Fraud <span className="gradient-text">Prediction</span>
-        </h2>
-        <p className="text-muted-foreground max-w-lg mx-auto">
-          LSTM temporal models predict which accounts are likely targets in the next 24 hours.
-        </p>
-      </motion.div>
+  useEffect(() => {
+    fetch("/api/forecast").then((r) => r.json()).then((d) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="glass-card p-6"
-        >
-          <h4 className="text-sm font-semibold mb-4">Risk Trend & Forecast</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,16%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} domain={[0, 100]} />
-              <Tooltip contentStyle={{ background: "hsl(222,40%,10%)", border: "1px solid hsl(222,30%,20%)", borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="risk" stroke="hsl(190,95%,55%)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="predicted" stroke="hsl(0,72%,55%)" strokeWidth={2} strokeDasharray="6 3" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="flex gap-4 mt-2 text-[10px] text-muted-foreground justify-center">
-            <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-primary" /> Actual</span>
-            <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-destructive border-dashed" style={{ borderTop: "2px dashed hsl(0,72%,55%)" }} /> Predicted</span>
-          </div>
+  if (loading) {
+    return (
+      <section className="py-24 md:py-32 border-t border-white/[0.04]">
+        <div className="section-container flex justify-center items-center min-h-[300px]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+      </section>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <section className="py-24 md:py-32 border-t border-white/[0.04]">
+      <div className="section-container">
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Future Fraud <span className="gradient-text">Prediction</span></h2>
+          <p className="text-muted-foreground max-w-lg mx-auto">Logistic Regression models predict which accounts are likely targets in the next 24 hours.</p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="glass-card p-6"
-        >
-          <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-[hsl(38,92%,55%)]" />
-            Likely Targets (Next 24 hrs)
-          </h4>
-          <div className="space-y-3">
-            {targets.map((t, i) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-secondary/30 rounded-lg p-4 border border-white/[0.04]"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-xs text-foreground">{t.id}</span>
-                  <span className="font-mono text-sm font-bold text-[hsl(0,72%,55%)]">{t.risk}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{t.reason}</p>
-                <span className="text-[10px] text-primary/60 mt-1 block">Estimated: {t.time}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="glass-card p-6">
+            <h4 className="text-sm font-semibold mb-4">Risk Trend & Forecast</h4>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={data.trend_data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,16%)" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(215,20%,55%)" }} domain={[0, 100]} />
+                <Tooltip contentStyle={{ background: "hsl(222,40%,10%)", border: "1px solid hsl(222,30%,20%)", borderRadius: 8, fontSize: 12 }} />
+                <Line type="monotone" dataKey="risk" stroke="hsl(190,95%,55%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="predicted" stroke="hsl(0,72%,55%)" strokeWidth={2} strokeDasharray="6 3" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 mt-2 text-[10px] text-muted-foreground justify-center">
+              <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-primary" /> Actual</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-destructive border-dashed" style={{ borderTop: "2px dashed hsl(0,72%,55%)" }} /> Predicted</span>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="glass-card p-6">
+            <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-[hsl(38,92%,55%)]" /> Likely Targets (Next 24 hrs)
+            </h4>
+            <div className="space-y-3">
+              {data.at_risk_accounts.slice(0, 4).map((t, i) => (
+                <motion.div key={t.user_id} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-secondary/30 rounded-lg p-4 border border-white/[0.04]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-xs text-foreground">{t.user_id}</span>
+                    <span className="font-mono text-sm font-bold text-[hsl(0,72%,55%)]">{t.risk_probability}%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.reason}</p>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[10px] text-primary/60">Est: {t.estimated_time}</span>
+                    <span className="text-[10px] text-[hsl(38,92%,55%)]">{t.recommended_action}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default FuturePrediction;

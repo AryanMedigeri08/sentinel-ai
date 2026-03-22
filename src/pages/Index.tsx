@@ -9,6 +9,7 @@ import AIModels from "@/components/AIModels";
 import ExplainableAI from "@/components/ExplainableAI";
 import FuturePrediction from "@/components/FuturePrediction";
 import Alerts from "@/components/Alerts";
+import ModelMetrics from "@/components/ModelMetrics";
 import About from "@/components/About";
 import Team from "@/components/Team";
 import Footer from "@/components/Footer";
@@ -26,6 +27,7 @@ const Index = () => (
     <ExplainableAI />
     <FuturePrediction />
     <Alerts />
+    <ModelMetrics />
     <About />
     <Team />
     <Footer />
@@ -33,3 +35,4 @@ const Index = () => (
 );
 
 export default Index;
+
