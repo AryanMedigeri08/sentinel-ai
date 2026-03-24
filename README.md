@@ -44,7 +44,7 @@ Follow these steps to set up and run Sentinel AI on your local machine.
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Arnav-Shende007/sentinel-ai
 cd sentinel-ai
 ```
 
